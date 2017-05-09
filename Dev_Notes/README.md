@@ -1,4 +1,4 @@
-## RESTFULL API Dev_Note
+## Creating RESTful API
 
 ## 1. Setting up our Node Project Skeleton
 
@@ -175,7 +175,7 @@ export default({ config, db}) => {
 ```
 
 
-## Adding Data (POST requests in Node)
+## 3. Adding Data (POST requests in Node)
 
 create `controller/restaurant.js`
 
@@ -219,7 +219,7 @@ let restaurantSchema = new Schema({
 module.exports = mongoose.model('Restaurant', restaurantSchema);
 ```
 
-## Retrieving Data (GET requests in Node)
+## 4. Retrieving Data (GET requests in Node)
 Add to `model/restaurant.js`
 
 ```
@@ -245,7 +245,7 @@ Add to `model/restaurant.js`
 
 ```
 
-## Updating Data (PUT requests in Node)
+## 5. Updating Data (PUT requests in Node)
 Add to `model/restaurant.js`
 
 ```
@@ -266,7 +266,7 @@ Add to `model/restaurant.js`
   });
 
 ```
-## Deleting Data (DELETE requests in Node)
+## 6. Deleting Data (DELETE requests in Node)
 
 ```
 // 'v1/restaurant/:id'  --Delete
@@ -281,5 +281,140 @@ Add to `model/restaurant.js`
       res.json({message: "Restaurant Successfully Removed!"});
     });
   });
-  ```
+```
+
+## 7. Start FoodTruck API
+Change all `Restaurant` to `FoodTruck` and `restaurant` to `foodtruck`
+
+Creat `model/review.js` as the Schema of Reviews
+
+```
+import mongoose from 'mongoose';
+import FoodTruck from './foodtruck';
+let Schema =  mongoose.Schema;
+
+let ReviewSchema = new Schema({
+  title:{
+    type:String,
+    require:true
+  },
+  text:String,
+  foodtruck:{
+    type:Schema.Types.ObjectID,  //As an obj of FoodTruck
+    ref:'FoodTruck',
+    require:true
+  }
+});
+
+module.exports = mongoose.model('Review', ReviewSchema);
+```
+
+ Change `model/foodtruck.js` as folowing
+ 
+```
+ import Review from './review';
+
+let Schema = mongoose.Schema;
+
+let FoodTruckSchema = new Schema({
+  name: {
+    type:String,
+    required:true
+  },
+  foodtype:{
+    type:String,
+    required:true
+  },
+  avgcost:Number,
+  geometry:{
+    type:{type:String, default:'Point'},
+    coordinates:[Number]
+  },
+  reviews:[{type: Schema.Types.ObjectId, ref:'Review'}]
+});
+```
+
+Add following to `controller/foodtruck.js`
+
+```
+  //Add review for a specific foodtruck id
+  // '/v1/foodtruck/review/add/:id'
+  api.post('/reviews/add/:id', (req, res) =>{
+    FoodTruck.findById(req.params.id,(err, foodtruck)=>{
+      if(err){
+        res.send(err);
+      }
+
+      let NewReview = new Review();
+
+      newReview.title = req.body.title;
+      newReview.text = req.body.text;
+      newReview.foodtruck = foodtruck._id;
+      NewReview.save((err,review) =>{
+        if(err){
+          res.send(err);
+        }
+        foodtruck.reviews.push(newReivew);      //this gonna push the array of reviews to reviews in foodtruck controller
+        foodtruck.save(err=>{
+          if(err){
+            res.send(err);
+          }
+          res.json({message:'FoodTruck review saved!'})
+        });
+      });
+    });
+  });
+```
+
+Modify following to `controller/foodtruck.js`
+
+```
+  api.post('/add', (req, res) => {
+    let newFoodTruck = new FoodTruck();
+    newFoodTruck.name = req.body.name;
+    newFoodTruck.foodtype = req.body.foodtype;
+    newFoodTruck.avgcost = req.body.avgcost;
+    newFoodTruck.geometry.coordinates = req.body.geometry.coordinates;
+
+    newFoodTruck.save(err => {
+      if(err) {
+        res.send(err);
+      }
+      res.json({message: 'foodtruck saved successfully'});
+    });
+  });
+```
+
+And don't forget import `Review` in `controller/foodtruck.js`
+
+```
+import Review from '../model/review';
+```
+
+Add these to get review by id and get foodtype by name
+
+```
+//get reviews for a specific food truck id
+  //'/v1/foodtruck/reviews/:id'
+  api.get('/reviews/:id',(req, res) => {
+    Review.find({foodtruck: req.params.id}, (err, reviews) =>{
+      if(err){
+        res.send(err);
+      }
+      res.json(reviews);
+    });
+  });
+  
+
+  api.get('/foodtype/:foodtype', (req, res) =>{
+    FoodTruck.find({foodtype: req.params.foodtype}, (err, foodtrucks) =>{
+      if(err){
+        res.send(err);
+      }
+      res.json(foodtrucks);
+    });
+  });
+```
+  
+
 

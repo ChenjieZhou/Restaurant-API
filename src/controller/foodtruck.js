@@ -51,6 +51,9 @@ export default({config, db}) => {
         res.send(err);
       }
       foodtruck.name = req.body.name;
+      foodtruck.foodtype = req.body.foodtype;
+      foodtruck.avgcost = req.body.avgcost;
+      foodtruck.geometry.coordinates = req.body.geometry.coordinates;
 
       foodtruck.save(err => {
         if(err){
@@ -99,6 +102,26 @@ export default({config, db}) => {
           res.json({message:'FoodTruck review saved!'})
         });
       });
+    });
+  });
+
+  //get reviews for a specific food truck id
+  //'/v1/foodtruck/reviews/:id'
+  api.get('/reviews/:id',(req, res) => {
+    Review.find({foodtruck: req.params.id}, (err, reviews) =>{
+      if(err){
+        res.send(err);
+      }
+      res.json(reviews);
+    });
+  });
+
+  api.get('/foodtype/:foodtype', (req, res) =>{
+    FoodTruck.find({foodtype: req.params.foodtype}, (err, foodtrucks) =>{
+      if(err){
+        res.send(err);
+      }
+      res.json(foodtrucks);
     });
   });
 
